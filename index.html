@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-600">
 
-<section id="page-login" class="page-section active min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-white to-orange-50">
+<section id="page-login" class="page-section min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-white to-orange-50">
     <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-md w-full text-center">
         <div class="text-emerald-600 text-4xl font-black mb-2 flex items-center justify-center gap-2">
             <i class="fa-solid fa-apple-whole text-orange-500"></i>EDUGIZI
@@ -218,7 +218,7 @@
             </div>
             
             <div>
-                <h3 id="quiz-question-text" class="text-sm font-bold text-slate-800 leading-relaxed">Pertanyaan kuis akan dimuat di sini...</h3>
+                <h3 id="quiz-question-text" class="text-sm font-bold text-slate-800 leading-relaxed">Pertanyaan kuis...</h3>
             </div>
 
             <div id="quiz-options-container" class="flex flex-col gap-2">
@@ -253,7 +253,7 @@
                 </div>
             </div>
 
-            <div id="score-comparison-box" class="text-xs font-medium text-slate-600 p-3 bg-emerald-50 rounded-xl text-emerald-800 hidden">
+            <div id="score-comparison-box" class="text-xs font-medium p-3 rounded-xl hidden">
                 </div>
 
             <div class="pt-2 flex flex-col gap-2">
@@ -293,7 +293,7 @@
                             <th class="p-4 text-center">Skor Pre-Test</th>
                             <th class="p-4 text-center">Skor Post-Test</th>
                             <th class="p-4 text-center">Kenaikan Poin</th>
-                            <th class="p-4">Waktu Ujian terakhir</th>
+                            <th class="p-4">Waktu Ujian Terakhir</th>
                         </tr>
                     </thead>
                     <tbody id="table-admin-records" class="divide-y divide-slate-100">
@@ -314,7 +314,7 @@
     const JURNAL_MATERI = [
         {
             title: "Pentingnya Gizi Seimbang bagi Remaja",
-            body: "<p>Masa remaja merupakan periode pertumbuhan cepat kedua (growth spurt) setelah masa bayi. Pada fase ini, kebutuhan energi, protein, dan zat gizi mikro meningkat drastis untuk mendukung kematangan fisik organ tubuh.</p><p>Gizi seimbang bukan sekadar kenyang, melainkan terpenuhinya porsi karbohidrat, protein harian, lemak sehat, serta vitamin esensial yang seimbang guna menjaga daya konsentrasi belajar di sekolah.</p>"
+            body: "<p>Masa remaja merupakan periode pertumbuhan cepat kedua (growth spurt). Pada fase ini, kebutuhan energi, protein, dan zat gizi mikro meningkat drastis untuk mendukung kematangan fisik organ tubuh.</p><p>Gizi seimbang bukan sekadar kenyang, melainkan terpenuhinya porsi karbohidrat, protein harian, lemak sehat, serta vitamin esensial yang seimbang guna menjaga daya konsentrasi belajar di sekolah.</p>"
         },
         {
             title: "Mengenal Konsep Panduan Isi Piringku",
@@ -337,35 +337,29 @@
     // --- MANAJEMEN STATE APLIKASI ---
     let currentUser = null; 
     let currentMateriIndex = 0;
-    
-    let currentQuizType = null; // 'pretest' atau 'posttest'
+    let currentQuizType = null; 
     let currentQuestionIndex = 0;
     let tempScoreCount = 0;
 
-    // Repositori data siswa lokal menggunakan LocalStorage simulator
+    // Repositori data siswa lokal menggunakan LocalStorage browser
     let rekapSiswaDB = JSON.parse(localStorage.getItem('edugizi_records')) || [];
 
-    // --- FUNGSI NAVIGASI & ROUTING ---
+    // --- FUNGSI NAVIGASI CORE ---
     function navigateTo(pageId) {
-        // Sembunyikan semua section halaman terlebih dahulu
         document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
         
-        // Atur status aktif tab menu navigasi navbar
         document.querySelectorAll('#main-nav button').forEach(b => {
             b.classList.remove('text-emerald-600', 'bg-emerald-50');
             b.classList.add('hover:text-emerald-600');
         });
 
-        // Alur pengecekan halaman tujuan
         if (pageId === 'home') {
             document.getElementById('page-home').classList.remove('hidden');
-            const btnHome = document.getElementById('nav-home');
-            if(btnHome) { btnHome.classList.add('text-emerald-600', 'bg-emerald-50'); }
+            document.getElementById('nav-home').classList.add('text-emerald-600', 'bg-emerald-50');
         } 
         else if (pageId === 'materi') {
             document.getElementById('page-materi').classList.remove('hidden');
-            const btnMateri = document.getElementById('nav-materi');
-            if(btnMateri) { btnMateri.classList.add('text-emerald-600', 'bg-emerald-50'); }
+            document.getElementById('nav-materi').classList.add('text-emerald-600', 'bg-emerald-50');
             muatHalamanMateri();
         } 
         else if (pageId === 'pretest' || pageId === 'posttest') {
@@ -384,7 +378,7 @@
         }
     }
 
-    // --- LOGIKA OTENTIKASI & LOGIN ---
+    // --- LOGIKA UTAMA LOGIN ---
     function handleLogin(e) {
         e.preventDefault();
         const namaInput = document.getElementById('input-nama').value.trim();
@@ -392,7 +386,6 @@
 
         if (!namaInput || !kelasInput) return;
 
-        // Cari atau buat profil data baru dalam basis rekap
         let siswaEksis = rekapSiswaDB.find(s => s.nama.toLowerCase() === namaInput.toLowerCase() && s.kelas === kelasInput);
         if (!siswaEksis) {
             siswaEksis = {
@@ -408,7 +401,6 @@
 
         currentUser = { role: 'siswa', dataRef: siswaEksis };
         
-        // Sinkronisasi interface pengguna
         document.getElementById('user-display-name').innerText = siswaEksis.nama;
         document.getElementById('page-login').classList.add('hidden');
         document.getElementById('global-navbar').classList.remove('hidden');
@@ -426,12 +418,11 @@
             document.getElementById('global-navbar').classList.remove('hidden');
             document.getElementById('main-content-area').classList.remove('hidden');
             
-            // Sembunyikan navigasi menu utama khusus siswa
             document.getElementById('main-nav').classList.add('hidden');
             navigateTo('admin');
             renderAdminTable();
         } else if (sandi !== null) {
-            alert("Kata sandi salah atau tidak memiliki otoritas!");
+            alert("Kata sandi salah!");
         }
     }
 
@@ -447,8 +438,7 @@
 
     function toggleProfileDropdown(e) {
         e.stopPropagation();
-        const menu = document.getElementById('profile-dropdown-menu');
-        menu.classList.toggle('hidden');
+        document.getElementById('profile-dropdown-menu').classList.toggle('hidden');
     }
 
     window.addEventListener('click', () => {
@@ -458,7 +448,6 @@
     // --- LOGIKA PANEL MATERI ---
     function muatHalamanMateri() {
         const sidebar = document.getElementById('materi-sidebar');
-        // Bersihkan dan sisakan judul header saja
         sidebar.innerHTML = '<h3 class="font-bold text-[10px] text-slate-400 uppercase tracking-wider px-2 mb-3">Daftar Materi</h3>';
         
         JURNAL_MATERI.forEach((m, idx) => {
@@ -480,7 +469,6 @@
         document.getElementById('materi-title').innerText = mat.title;
         document.getElementById('materi-body').innerHTML = mat.body;
 
-        // Kontrol tombol prev & next
         document.getElementById('btn-mat-prev').disabled = (currentMateriIndex === 0);
         
         const btnNext = document.getElementById('btn-mat-next');
@@ -503,15 +491,16 @@
         }
     }
 
-    // --- LOGIKA INTERAKTIF KUIS (PRE / POST TEST) ---
+    // --- LOGIKA INTERAKTIF KUIS ---
     function bukaWelcomeQuiz() {
+        navigateTo('none'); 
         document.getElementById('page-quiz-welcome').classList.remove('hidden');
         
         const isPre = (currentQuizType === 'pretest');
         document.getElementById('quiz-welcome-title').innerText = isPre ? "Ujian Kompetensi Pre-Test" : "Ujian Kompetensi Post-Test";
         document.getElementById('quiz-welcome-desc').innerText = isPre 
-            ? "Ujian ini ditujukan untuk mengukur sejauh mana pemahaman awal Anda mengenai materi gizi seimbang harian sebelum memulai pembelajaran fungsional."
-            : "Ujian ini ditujukan untuk mengukur tingkat peningkatan kognitif Anda setelah selesai mempelajari materi ringkas gizi seimbang.";
+            ? "Ujian ini ditujukan untuk mengukur sejauh mana pemahaman awal Anda mengenai materi gizi seimbang harian sebelum memulai pembelajaran."
+            : "Ujian ini ditujukan untuk mengukur tingkat peningkatan kognitif Anda setelah selesai mempelajari seluruh materi gizi seimbang.";
 
         document.getElementById('info-jumlah-soal').innerText = `${BANK_SOAL.length} Soal`;
         
@@ -526,22 +515,19 @@
         tempScoreCount = 0;
         document.getElementById('page-quiz-welcome').classList.add('hidden');
         document.getElementById('page-quiz-active').classList.remove('hidden');
-        
         renderSoalKuisAktif();
     }
 
     function renderSoalKuisAktif() {
         const soal = BANK_SOAL[currentQuestionIndex];
-        
-        // Update Metadata teks
         const badge = document.getElementById('quiz-type-badge');
+        
         badge.innerText = currentQuizType === 'pretest' ? 'Pre-Test' : 'Post-Test';
         badge.className = `text-xs font-bold uppercase px-3 py-1 rounded-full ${currentQuizType === 'pretest' ? 'text-blue-600 bg-blue-50' : 'text-emerald-600 bg-emerald-50'}`;
         
         document.getElementById('quiz-progress-text').innerText = `Soal ${currentQuestionIndex + 1} dari ${BANK_SOAL.length}`;
         document.getElementById('quiz-question-text').innerText = soal.q;
 
-        // Render Opsi Jawaban Radio-Style kustom
         const container = document.getElementById('quiz-options-container');
         container.innerHTML = '';
 
@@ -555,7 +541,6 @@
             container.appendChild(label);
         });
 
-        // Kunci tombol next hingga memilih opsi jawaban
         const btnNext = document.getElementById('btn-next-question');
         btnNext.disabled = true;
         btnNext.className = "px-5 py-2.5 bg-slate-300 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-2 cursor-not-allowed";
@@ -571,8 +556,7 @@
         const terpilih = document.querySelector('input[name="kuis_opsi"]:checked');
         if (!terpilih) return;
 
-        const indeksJawaban = parseInt(terpilih.value);
-        if (indeksJawaban === BANK_SOAL[currentQuestionIndex].benar) {
+        if (parseInt(terpilih.value) === BANK_SOAL[currentQuestionIndex].benar) {
             tempScoreCount++;
         }
 
@@ -585,24 +569,17 @@
     }
 
     function prosesKalkulasiHasilAkhir() {
-        // Kalkulasi persentase nilai akhir (Skor utuh tanpa pecahan desimal)
         const nilaiAkhir = Math.round((tempScoreCount / BANK_SOAL.length) * 100);
-        
-        // Simpan ke database referensi user aktif
         const dataRef = currentUser.dataRef;
-        const waktuSekarang = new Date();
-        const timestampString = `${waktuSekarang.getMonth()+1}/${waktuSekarang.getDate()}/${waktuSekarang.getFullYear()}, ${waktuSekarang.getHours().toString().padStart(2,'0')}.${waktuSekarang.getMinutes().toString().padStart(2,'0')}.${waktuSekarang.getSeconds().toString().padStart(2,'0')}`;
+        const n = new Date();
+        const tString = `${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
 
-        if (currentQuizType === 'pretest') {
-            dataRef.preTest = nilaiAkhir;
-        } else {
-            dataRef.postTest = nilaiAkhir;
-        }
-        dataRef.timestamp = timestampString;
+        if (currentQuizType === 'pretest') dataRef.preTest = nilaiAkhir;
+        else dataRef.postTest = nilaiAkhir;
         
+        dataRef.timestamp = tString;
         simpanKeStorage();
 
-        // Alihkan visual ke panel raport nilai
         document.getElementById('page-quiz-active').classList.add('hidden');
         document.getElementById('page-quiz-result').classList.remove('hidden');
 
@@ -610,7 +587,6 @@
         document.getElementById('score-pre-display').innerText = dataRef.preTest !== null ? `${dataRef.preTest}%` : '-';
         document.getElementById('score-post-display').innerText = dataRef.postTest !== null ? `${dataRef.postTest}%` : '-';
 
-        // Tampilkan kalkulasi komparasi peningkatan poin jika keduanya lengkap
         const compBox = document.getElementById('score-comparison-box');
         if (dataRef.preTest !== null && dataRef.postTest !== null) {
             const deviasi = dataRef.postTest - dataRef.preTest;
@@ -619,7 +595,7 @@
                 compBox.innerText = `Luar biasa! Pemahaman Anda mengalami peningkatan sebesar +${deviasi} poin setelah sesi pembelajaran.`;
                 compBox.className = "text-xs font-medium p-3 bg-emerald-50 rounded-xl text-emerald-800";
             } else {
-                compBox.innerText = `Evaluasi: Nilai Anda menurun ${deviasi} poin. Jangan berkecil hati, ayo pelajari lagi materinya!`;
+                compBox.innerText = `Evaluasi: Nilai Anda menurun ${deviasi} poin. Ayo pelajari kembali materinya!`;
                 compBox.className = "text-xs font-medium p-3 bg-red-50 rounded-xl text-red-800";
             }
         } else {
@@ -631,7 +607,7 @@
         localStorage.setItem('edugizi_records', JSON.stringify(rekapSiswaDB));
     }
 
-    // --- LOGIKA DASHBOARD GURU / ADMIN ---
+    // --- LOGIKA DASHBOARD GURU ---
     function renderAdminTable() {
         const tbody = document.getElementById('table-admin-records');
         const emptyState = document.getElementById('empty-state-admin');
@@ -646,7 +622,6 @@
         rekapSiswaDB.forEach((s, idx) => {
             const preVal = s.preTest !== null ? `${s.preTest}%` : '-';
             const postVal = s.postTest !== null ? `${s.postTest}%` : '-';
-            
             let deviasiPoin = '-';
             if (s.preTest !== null && s.postTest !== null) {
                 const diff = s.postTest - s.preTest;
@@ -668,56 +643,42 @@
         });
     }
 
-    // --- FITUR EKSPOR KE FILE CSV (STANDARD FORMAT GLOBAL) ---
+    // --- FITUR EKSPOR DATA CSV BEBAS BUG EXCEL ---
     function eksporKeCSV() {
         if (rekapSiswaDB.length === 0) {
-            alert("Tidak ada data nilai siswa yang siap diekspor.");
+            alert("Tidak ada data siswa.");
             return;
         }
 
-        // Definisi Header kolom CSV
         const header = ["No", "Nama Siswa", "Kelas", "Skor Pre-Test", "Skor Post-Test", "Kenaikan Poin", "Waktu Ujian"];
-        
-        // Bangun baris data
         const rows = rekapSiswaDB.map((s, idx) => {
             const preVal = s.preTest !== null ? `${s.preTest}%` : '-';
             const postVal = s.postTest !== null ? `${s.postTest}%` : '-';
-            
             let deviasiPoin = '-';
             if (s.preTest !== null && s.postTest !== null) {
                 const diff = s.postTest - s.preTest;
                 deviasiPoin = diff >= 0 ? `+${diff}` : `${diff}`;
             }
 
-            // Jika item teks berpotensi mengandung tanda koma, bungkus dengan tanda kutip ganda
-            const namaClean = s.nama.includes(',') ? `"${s.nama}"` : s.nama;
-            const kelasClean = s.kelas.includes(',') ? `"${s.kelas}"` : s.kelas;
-            const waktuClean = s.timestamp.includes(',') ? `"${s.timestamp}"` : s.timestamp;
-
             return [
                 idx + 1,
-                namaClean,
-                kelasClean,
+                s.nama.includes(',') ? `"${s.nama}"` : s.nama,
+                s.kelas.includes(',') ? `"${s.kelas}"` : s.kelas,
                 preVal,
                 postVal,
                 deviasiPoin,
-                waktuClean
+                s.timestamp
             ];
         });
 
-        // Gabungkan seluruh baris menggunakan separator TANDA KOMA ( , ) sesuai standar CSV global
         const csvContent = [header.join(","), ...rows.map(r => r.join(","))].join("\n");
-
-        // Konversi string ke format Blob data UTF-8 dengan BOM agar terbaca sempurna di semua versi Excel
+        // Ditambahkan penanda \uFEFF BOM agar Excel mengenali pembagian kolom koma secara otomatis
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        
-        // Manipulasi elemen tautan unduhan otomatis browser
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `Rekap_Nilai_EDUGIZI_SMAN1_Parepare.csv`);
+        link.setAttribute("download", `Rekap_Nilai_EDUGIZI.csv`);
         document.body.appendChild(link);
-        
         link.click();
         document.body.removeChild(link);
     }
