@@ -771,6 +771,26 @@
             link.click();
             document.body.removeChild(link);
         }
+function kirimKeGoogleSheets(namaSiswa, kelasSiswa, pretestSkor, posttestSkor) {
+    \
+    const urlDatabase = "https://script.google.com/macros/s/AKfycbxwAU9IPYzclzko55yJd6srdR2Vmu3PZkiwoyT29N6u9m6SV5RME4p7My_YQozVtldo/exec";
+
+    fetch(urlDatabase, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            nama: namaSiswa,
+            kelas: kelasSiswa,
+            pretest: pretestSkor,
+            posttest: posttestSkor
+        })
+    })
+    .then(() => console.log("Data berhasil terkirim ke database!"))
+    .catch(error => console.error("Gagal mengirim data:", error));
+}
     </script>
 </body>
 </html>
