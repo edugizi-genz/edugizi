@@ -326,7 +326,8 @@
                                 <th class="p-4">Waktu Ujian</th>
                             </tr>
                         </thead>
-                        <tbody id="tabel-rekap-body" class="divide-y divide-slate-100 font-medium text-slate-700"></tbody>
+                        <tbody id="tabel-rekap-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                            </tbody>
                     </table>
                 </div>
                 
@@ -348,9 +349,6 @@
         let nilaiPreTestSiswa = 0;
         let nilaiPostTestSiswa = 0;
         let logoClickCount = 0;
-
-        // URL Google Apps Script Anda yang sudah terhubung ke Google Sheets
-        const URL_GOOGLE_SCRIPT = "https://script.google.com/macros/s/AKfycbyhw4y4XRv9x5SLT3d2owUbKOraUJHzSog7209grSgqRXzLK7J34wnfyFQQGVdyjV-t/exec";
 
         const databaseMateri = [
             { title: "1. Pengertian Gizi Seimbang", content: "<p>Gizi seimbang adalah susunan makanan sehari-hari yang mengandung zat gizi dalam jenis dan jumlah yang sesuai dengan kebutuhan tubuh, dengan memperhatikan prinsip keanekaragaman pangan, aktivitas fisik, perilaku hidup bersih, dan mempertahankan berat badan normal untuk mencegah masalah gizi.</p><p class='font-semibold text-emerald-600 mt-2'>Manfaat Gizi Seimbang:</p><ul class='list-disc pl-4 space-y-0.5'><li>Menjaga kesehatan tubuh</li><li>Mendukung pertumbuhan</li><li>Meningkatkan daya tahan</li></ul>" },
@@ -378,7 +376,6 @@
         let statusKunciSoal = Array(databaseSoal.length).fill(false);
         let countdownTimer = null;
 
-        // --- PROSES LOGIN ---
         function handleLogin(event) {
             event.preventDefault();
             namaSiswa = document.getElementById("input-nama").value.trim();
@@ -387,397 +384,393 @@
             if(namaSiswa && kelasSiswa) {
                 let localData = JSON.parse(localStorage.getItem("edugizi_scores")) || [];
                 let existingRecord = localData.find(item => item.nama.toLowerCase() === namaSiswa.toLowerCase() && item.kelas === kelasSiswa);
-                
-                if (existingRecord) {
-                    nilaiPreTestSiswa = existingRecord.pretest || 0;
-                    nilaiPostTestSiswa = existingRecord.posttest || 0;
+                if(existingRecord) {
+                    nilaiPreTestSiswa = existingRecord.pretest;
+                    nilaiPostTestSiswa = existingRecord.posttest;
                 } else {
                     nilaiPreTestSiswa = 0;
                     nilaiPostTestSiswa = 0;
                 }
-                
+
                 document.getElementById("user-display-name").innerText = namaSiswa;
-                document.getElementById("page-login").classList.remove("active");
+                document.getElementById("page-login").classList.add("hidden");
                 document.getElementById("global-navbar").classList.remove("hidden");
                 document.getElementById("main-content-area").classList.remove("hidden");
-                
                 navigateTo('home');
-                initSidebarMateri();
             }
         }
 
-        // --- REAL-TIME DATA SYNC KE GOOGLE SHEETS ---
-        function kirimKeGoogleSheets(nama, kelas, pre, post) {
-            let dataDikirim = {
-                nama: nama,
-                kelas: kelas,
-                pretest: pre,
-                posttest: post,
-                waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Makassar" })
-            };
-
-            fetch(URL_GOOGLE_SCRIPT, {
-                method: "POST",
-                body: JSON.stringify(dataDikirim),
-                headers: { "Content-Type": "text/plain;charset=utf-8" }
-            })
-            .then(res => res.json())
-            .then(hasil => console.log("Sinkronisasi Google Sheets Berhasil:", hasil.status))
-            .catch(err => console.error("Gagal sinkronisasi Google Sheets:", err));
+        // FUNGSI BARU: Logika Dropdown Profil & Logout/Keluar
+        function toggleProfileDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById("profile-dropdown-menu");
+            dropdown.classList.toggle("hidden");
         }
 
-        // --- NAVIGASI ANTAR HALAMAN ---
-        function navigateTo(pageId) {
-            document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-            
-            if (pageId === 'home') {
-                document.getElementById("page-home").classList.add("active");
-            } else if (pageId === 'materi') {
-                document.getElementById("page-materi").classList.add("active");
-                tampilkanMateri(currentMateriIndex);
-            } else if (pageId === 'pretest' || pageId === 'posttest') {
-                tipeKuisAktif = pageId;
-                document.getElementById("page-quiz-welcome").classList.add("active");
-                document.getElementById("quiz-welcome-title").innerText = pageId === 'pretest' ? "Ujian Pre-Test" : "Ujian Post-Test";
-                document.getElementById("quiz-welcome-desc").innerText = pageId === 'pretest' 
-                    ? "Pre-Test digunakan untuk mengukur pengetahuan awal mengenai gizi seimbang." 
-                    : "Post-Test digunakan untuk mengukur peningkatan pemahaman setelah belajar materi.";
+        function closeProfileDropdown(event) {
+            const dropdown = document.getElementById("profile-dropdown-menu");
+            if (dropdown && !dropdown.classList.contains("hidden")) {
+                dropdown.classList.add("hidden");
             }
-            
-            document.querySelectorAll('#main-nav button').forEach(btn => btn.classList.remove('text-emerald-600', 'bg-emerald-50'));
-            let activeBtn = document.getElementById(`nav-${pageId}`);
-            if (activeBtn) activeBtn.classList.add('text-emerald-600', 'bg-emerald-50');
         }
 
-        // --- LOGIKA UTAMA MATERI ---
-        function initSidebarMateri() {
-            let sidebar = document.getElementById("materi-sidebar");
-            sidebar.innerHTML = '<h3 class="font-bold text-[10px] text-slate-400 uppercase tracking-wider px-2 mb-3">Daftar Materi</h3>';
-            databaseMateri.forEach((mat, idx) => {
-                let btn = document.createElement("button");
-                btn.className = "w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-600 hover:bg-slate-50";
-                btn.id = `sidebar-mat-${idx}`;
-                btn.innerText = mat.title;
-                btn.onclick = () => tampilkanMateri(idx);
-                sidebar.appendChild(btn);
+        function handleLogout() {
+            if(confirm("Apakah Anda yakin ingin keluar dan kembali ke halaman utama?")) {
+                clearInterval(countdownTimer);
+                
+                // Reset form input login
+                document.getElementById("input-nama").value = "";
+                document.getElementById("input-kelas").value = "";
+                
+                // Sembunyikan aplikasi utama, munculkan login
+                document.getElementById("global-navbar").classList.add("hidden");
+                document.getElementById("main-content-area").classList.add("hidden");
+                document.getElementById("page-login").classList.remove("hidden");
+                
+                // Pastikan halaman login aktif kembali
+                document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+                document.getElementById("page-login").classList.add("active");
+            }
+        }
+
+        function aksesAdminDenganSandi() {
+            let passwordInput = prompt("Masukkan Kata Sandi Khusus Guru / Admin:");
+            if (passwordInput === "admin123") {
+                navigateTo('admin');
+            } else if (passwordInput !== null) {
+                alert("Kata sandi salah! Akses ditolak.");
+            }
+        }
+
+        function handleLogoClick() {
+            logoClickCount++;
+            if (logoClickCount >= 3) {
+                logoClickCount = 0;
+                aksesAdminDenganSandi();
+            }
+        }
+
+        function navigateTo(tabId) {
+            clearInterval(countdownTimer);
+            
+            if (tabId === 'admin') {
+                document.getElementById("page-login").classList.add("hidden");
+                document.getElementById("global-navbar").classList.remove("hidden");
+                document.getElementById("main-content-area").classList.remove("hidden");
+                document.getElementById("user-display-name").innerText = "Guru / Admin";
+            }
+
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('#main-nav button').forEach(btn => btn.className = "px-3 py-2 rounded-lg hover:text-emerald-600 text-slate-500 font-medium");
+
+            if (tabId === 'home') {
+                document.getElementById('page-home').classList.add('active');
+                document.getElementById('nav-home').className = "px-3 py-2 rounded-lg text-emerald-600 font-bold bg-emerald-50";
+            } else if (tabId === 'materi') {
+                document.getElementById('page-materi').classList.add('active');
+                document.getElementById('nav-materi').className = "px-3 py-2 rounded-lg text-emerald-600 font-bold bg-emerald-50";
+                renderSidebarMateri();
+                switchMateri(0);
+            } else if (tabId === 'pretest' || tabId === 'posttest') {
+                tipeKuisAktif = tabId;
+                document.getElementById('page-quiz-welcome').classList.add('active');
+                document.getElementById(`nav-${tabId}`).className = "px-3 py-2 rounded-lg text-emerald-600 font-bold bg-emerald-50";
+                
+                document.getElementById("quiz-welcome-title").innerText = tabId === 'pretest' ? "Halaman Pre-Test" : "Halaman Post-Test";
+                document.getElementById("quiz-welcome-desc").innerText = tabId === 'pretest' ? "Kerjakan soal berikut untuk mengetahui pemahaman awal Anda tentang gizi seimbang." : "Kerjakan soal berikut untuk mengetahui peningkatan pemahaman Anda setelah mempelajari materi.";
+                document.getElementById("btn-start-quiz-trigger").innerText = tabId === 'pretest' ? "Mulai Pre-Test ›" : "Mulai Post-Test ›";
+            } else if (tabId === 'admin') {
+                document.getElementById('page-admin').classList.add('active');
+                muatTabelRekapAdmin();
+            }
+        }
+
+        function renderSidebarMateri() {
+            const side = document.getElementById("materi-sidebar");
+            side.innerHTML = '<h3 class="font-bold text-[10px] text-slate-400 uppercase tracking-wider px-2 mb-3">Daftar Materi</h3>';
+            databaseMateri.forEach((m, idx) => {
+                side.innerHTML += `<button onclick="switchMateri(${idx})" id="btn-mat-${idx}" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer">${m.title}</button>`;
             });
         }
 
-        function tampilkanMateri(index) {
+        function switchMateri(index) {
             currentMateriIndex = index;
             document.getElementById("materi-title").innerText = databaseMateri[index].title;
             document.getElementById("materi-body").innerHTML = databaseMateri[index].content;
-            
+
             databaseMateri.forEach((_, idx) => {
-                let btn = document.getElementById(`sidebar-mat-${idx}`);
-                if (btn) {
-                    btn.className = idx === index 
-                        ? "w-full text-left px-3 py-2 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-600"
-                        : "w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-slate-50";
-                }
+                const btn = document.getElementById(`btn-mat-${idx}`);
+                if(btn) btn.className = idx === index ? "w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border-l-4 border-emerald-600" : "w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50";
             });
+
             document.getElementById("btn-mat-prev").disabled = index === 0;
-            document.getElementById("btn-mat-next").innerText = index === databaseMateri.length - 1 ? "Selesai Belajar" : "Materi Selanjutnya ›";
+            document.getElementById("btn-mat-next").innerText = index === databaseMateri.length - 1 ? "Mulai Uji Kuis ›" : "Materi Selanjutnya ›";
         }
 
         function changeMateriPage(dir) {
-            let nextIdx = currentMateriIndex + dir;
-            if (nextIdx >= 0 && nextIdx < databaseMateri.length) {
-                tampilkanMateri(nextIdx);
-            } else if (nextIdx === databaseMateri.length) {
-                navigateTo('home');
-                alert("Materi selesai! Silakan lanjut kerjakan Post-Test.");
-            }
+            let target = currentMateriIndex + dir;
+            if (target >= 0 && target < databaseMateri.length) switchMateri(target);
+            else if (target === databaseMateri.length) navigateTo('posttest');
         }
 
-        // --- LOGIKA UTAMA GAMEPLAY KUIS ---
         function startQuizGameplay() {
+            currentQuizIndex = 0;
             jawabanSiswa = Array(databaseSoal.length).fill(null);
             statusKunciSoal = Array(databaseSoal.length).fill(false);
-            currentQuizIndex = 0;
-            
-            document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-            document.getElementById("page-quiz-play").classList.add("active");
-            
-            buatNavigasiNomorSoal();
-            tampilkanSoalKuis(0);
-            startQuizTimer(1200); // 20 Menit dalam detik
+
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('page-quiz-play').classList.add('active');
+
+            renderQuizNavigationNumbers();
+            loadQuizQuestionSpesifik();
+            startQuizTimerCountdown(20 * 60);
         }
 
-        function buatNavigasiNomorSoal() {
-            let navBox = document.getElementById("quiz-nav-nums");
-            navBox.innerHTML = "";
+        function renderQuizNavigationNumbers() {
+            const container = document.getElementById("quiz-nav-nums");
+            container.innerHTML = "";
             databaseSoal.forEach((_, idx) => {
-                navBox.innerHTML += `<button id="quiz-nav-btn-${idx}" onclick="tampilkanSoalKuis(${idx})" class="aspect-square rounded-xl border border-slate-200 text-xs font-bold transition flex items-center justify-center text-slate-500 hover:bg-slate-50 cursor-pointer">${idx + 1}</button>`;
+                container.innerHTML += `<button id="quiz-nav-num-${idx}" onclick="jumpToQuestion(${idx})" class="w-10 h-10 rounded-xl text-xs font-medium border border-slate-200 text-slate-400 hover:bg-slate-50 transition cursor-pointer">${idx + 1}</button>`;
             });
         }
 
-        function tampilkanSoalKuis(index) {
-            currentQuizIndex = index;
-            let soal = databaseSoal[index];
-            
-            document.getElementById("quiz-header-index").innerText = `Soal ${index + 1} dari ${databaseSoal.length}`;
-            document.getElementById("quiz-question-text").innerText = soal.q;
-            
-            let optionsContainer = document.getElementById("quiz-options-container");
-            optionsContainer.innerHTML = "";
-            
-            soal.o.forEach((opsi, oIdx) => {
-                let isSelected = jawabanSiswa[index] === oIdx;
-                let btnStyle = "w-full text-left p-3 text-xs font-medium rounded-xl border transition flex items-center gap-3 cursor-pointer ";
-                
-                if(statusKunciSoal[index]) {
-                    if(oIdx === soal.c) {
-                        btnStyle += "bg-emerald-50 border-emerald-500 text-emerald-700 font-bold";
-                    } else if(isSelected && jawabanSiswa[index] !== soal.c) {
-                        btnStyle += "bg-red-50 border-red-500 text-red-700 font-bold";
+        function jumpToQuestion(idx) {
+            currentQuizIndex = idx;
+            loadQuizQuestionSpesifik();
+        }
+
+        function loadQuizQuestionSpesifik() {
+            const data = databaseSoal[currentQuizIndex];
+            document.getElementById("quiz-header-index").innerText = `Soal ${currentQuizIndex + 1} dari ${databaseSoal.length}`;
+            document.getElementById("quiz-question-text").innerText = data.q;
+
+            databaseSoal.forEach((_, idx) => {
+                const btn = document.getElementById(`quiz-nav-num-${idx}`);
+                if(!btn) return;
+                if(idx === currentQuizIndex) btn.className = "w-10 h-10 rounded-xl text-xs font-black border-2 border-emerald-600 bg-emerald-50 text-emerald-700";
+                else if(statusKunciSoal[idx]) btn.className = "w-10 h-10 rounded-xl text-xs font-bold bg-emerald-600 text-white";
+                else if(jawabanSiswa[idx] !== null) btn.className = "w-10 h-10 rounded-xl text-xs font-bold bg-amber-400 text-white";
+                else btn.className = "w-10 h-10 rounded-xl text-xs font-medium border border-slate-200 text-slate-400 hover:bg-slate-50";
+            });
+
+            const optContainer = document.getElementById("quiz-options-container");
+            optContainer.innerHTML = "";
+
+            data.o.forEach((opsi, idx) => {
+                const isSelected = jawabanSiswa[currentQuizIndex] === idx;
+                let style = "w-full text-left p-3.5 rounded-xl border text-xs font-medium flex items-center gap-3 transition cursor-pointer ";
+
+                if(statusKunciSoal[currentQuizIndex]) {
+                    if (tipeKuisAktif === "posttest") {
+                        if(idx === data.c) style += "bg-emerald-50 border-emerald-500 text-emerald-800 font-bold";
+                        else if(isSelected) style += "bg-red-50 border-red-400 text-red-800";
+                        else style += "bg-white border-slate-100 text-slate-300 pointer-events-none";
                     } else {
-                        btnStyle += "bg-slate-50 border-slate-100 opacity-60 text-slate-400";
+                        style += isSelected ? "bg-slate-200 border-slate-400 text-slate-700 font-bold" : "bg-white border-slate-100 text-slate-300 pointer-events-none";
                     }
                 } else {
-                    btnStyle += isSelected 
-                        ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-bold ring-2 ring-emerald-500/10" 
-                        : "bg-slate-50/50 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300";
+                    style += isSelected ? "bg-emerald-50 border-emerald-600 text-emerald-700 ring-2 ring-emerald-100 font-semibold" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700";
                 }
 
-                optionsContainer.innerHTML += `
-                    <button onclick="pilihJawabanKuis(${oIdx})" ${statusKunciSoal[index] ? 'disabled':''} class="${btnStyle}">
-                        <span class="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-emerald-500 text-white':'bg-white text-slate-400 border border-slate-200'}">${String.fromCharCode(65 + oIdx)}</span>
-                        ${opsi}
-                    </button>`;
+                optContainer.innerHTML += `
+                    <button onclick="selectOpsiKlik(${idx})" ${statusKunciSoal[currentQuizIndex] ? 'disabled' : ''} class="${style}">
+                        <span class="w-5 h-5 rounded-full border text-[10px] flex items-center justify-center font-bold bg-slate-50">${String.fromCharCode(65 + idx)}</span>
+                        <span>${opsi}</span>
+                    </button>
+                `;
             });
 
-            // Set Feedback Box Penjelasan
-            let feedbackBox = document.getElementById("quiz-feedback-box");
-            if(statusKunciSoal[index]) {
-                let betul = jawabanSiswa[index] === soal.c;
-                feedbackBox.className = `mt-4 p-3 rounded-xl border text-[11px] leading-relaxed ${betul ? 'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-red-50 border-red-200 text-red-800'}`;
-                feedbackBox.innerHTML = `<strong>${betul ? '✓ JAWABAN BENAR':'✗ JAWABAN SALAH'}</strong><p class="mt-0.5">${soal.exp}</p>`;
+            displayFeedbackBoxLogic();
+
+            document.getElementById("btn-quiz-prev").disabled = currentQuizIndex === 0;
+            const btnAction = document.getElementById("btn-quiz-action");
+            if(statusKunciSoal[currentQuizIndex]) {
+                btnAction.innerHTML = currentQuizIndex === databaseSoal.length - 1 ? `Selesai & Lihat Hasil <i class="fa-solid fa-flag-checkered ml-1"></i>` : `Soal Berikutnya ›`;
+                btnAction.className = "px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer";
             } else {
-                feedbackBox.className = "hidden";
-            }
-
-            // Perbarui tombol aksi
-            let actBtn = document.getElementById("btn-quiz-action");
-            if (statusKunciSoal[index]) {
-                actBtn.innerText = index === databaseSoal.length - 1 ? "Selesaikan Ujian ✓" : "Soal Berikutnya ›";
-                actBtn.className = "px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold cursor-pointer";
-            } else {
-                actBtn.innerText = "Kunci Jawaban";
-                actBtn.className = "px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold cursor-pointer";
-            }
-
-            document.getElementById("btn-quiz-prev").disabled = index === 0;
-            perbaruiWarnaNavigasiNomor();
-        }
-
-        function pilihJawabanKuis(opsiIndex) {
-            if(!statusKunciSoal[currentQuizIndex]) {
-                jawabanSiswa[currentQuizIndex] = opsiIndex;
-                tampilkanSoalKuis(currentQuizIndex);
+                btnAction.innerHTML = `Kunci Jawaban`;
+                btnAction.className = "px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold cursor-pointer";
             }
         }
 
-        function perbaruiWarnaNavigasiNomor() {
-            databaseSoal.forEach((_, idx) => {
-                let btn = document.getElementById(`quiz-nav-btn-${idx}`);
-                if(btn) {
-                    if(idx === currentQuizIndex) {
-                        btn.className = "aspect-square rounded-xl text-xs font-bold flex items-center justify-center bg-slate-800 text-white";
-                    } else if(statusKunciSoal[idx]) {
-                        let isBenar = jawabanSiswa[idx] === databaseSoal[idx].c;
-                        btn.className = `aspect-square rounded-xl text-xs font-bold flex items-center justify-center text-white ${isBenar ? 'bg-emerald-500':'bg-red-500'}`;
-                    } else if(jawabanSiswa[idx] !== null) {
-                        btn.className = "aspect-square rounded-xl text-xs font-bold flex items-center justify-center bg-emerald-50 border border-emerald-300 text-emerald-600";
-                    } else {
-                        btn.className = "aspect-square rounded-xl text-xs font-bold flex items-center justify-center text-slate-400 bg-slate-50 border border-slate-200";
-                    }
-                }
-            });
+        function selectOpsiKlik(idx) {
+            jawabanSiswa[currentQuizIndex] = idx;
+            loadQuizQuestionSpesifik();
         }
 
         function handleQuizAction() {
-            if (!statusKunciSoal[currentQuizIndex]) {
-                if (jawabanSiswa[currentQuizIndex] === null) {
-                    alert("Pilih salah satu jawaban terlebih dahulu!");
-                    return;
-                }
+            if(jawabanSiswa[currentQuizIndex] === null) {
+                alert("Pilih salah satu jawaban sebelum mengunci!");
+                return;
+            }
+
+            if(!statusKunciSoal[currentQuizIndex]) {
                 statusKunciSoal[currentQuizIndex] = true;
-                tampilkanSoalKuis(currentQuizIndex);
+                loadQuizQuestionSpesifik();
             } else {
-                if (currentQuizIndex < databaseSoal.length - 1) {
-                    tampilkanSoalKuis(currentQuizIndex + 1);
+                if(currentQuizIndex < databaseSoal.length - 1) {
+                    currentQuizIndex++;
+                    loadQuizQuestionSpesifik();
                 } else {
-                    prosesKalkulasiSkorKuis();
+                    hitungSkorAkhirEvaluasi();
                 }
             }
         }
 
         function navigateQuizQuestion(dir) {
-            let next = currentQuizIndex + dir;
-            if (next >= 0 && next < databaseSoal.length) {
-                tampilkanSoalKuis(next);
+            currentQuizIndex += dir;
+            loadQuizQuestionSpesifik();
+        }
+
+        function displayFeedbackBoxLogic() {
+            const container = document.getElementById("quiz-feedback-box");
+            if(!statusKunciSoal[currentQuizIndex]) {
+                container.className = "hidden";
+                return;
+            }
+
+            const data = databaseSoal[currentQuizIndex];
+            const isBenar = jawabanSiswa[currentQuizIndex] === data.c;
+            container.className = "mt-4 block";
+
+            if (tipeKuisAktif === "posttest") {
+                if (isBenar) {
+                    container.innerHTML = `
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs">
+                            <div class="font-bold flex items-center gap-1.5 mb-1 text-emerald-700"><i class="fa-solid fa-circle-check"></i> Jawaban Benar!</div>
+                            <p class="text-[11px] text-slate-600 font-medium">Jawaban Anda: ${String.fromCharCode(65 + data.c)}. ${data.o[data.c]}<br>${data.exp}</p>
+                        </div>`;
+                } else {
+                    container.innerHTML = `
+                        <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs">
+                            <div class="font-bold flex items-center gap-1.5 mb-1 text-red-700"><i class="fa-solid fa-circle-xmark"></i> Jawaban Salah!</div>
+                            <p class="text-[11px] text-slate-600 font-medium">Jawaban yang benar: <span class="text-red-600 font-bold">${String.fromCharCode(65 + data.c)}. ${data.o[data.c]}</span><br>${data.exp}</p>
+                        </div>`;
+                }
+            } else {
+                if (isBenar) {
+                    container.innerHTML = `<div class="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Jawaban Terkunci (Sistem Benar)</div>`;
+                } else {
+                    container.innerHTML = `<div class="p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-xl text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Jawaban Terkunci (Sistem Salah)</div>`;
+                }
             }
         }
 
-        function startQuizTimer(durasiDetik) {
-            clearInterval(countdownTimer);
-            let sisa = durasiDetik;
-            let display = document.getElementById("quiz-timer");
-            
+        function startQuizTimerCountdown(secLeft) {
+            const display = document.getElementById("quiz-timer");
             countdownTimer = setInterval(() => {
-                let m = Math.floor(sisa / 60);
-                let s = sisa % 60;
-                display.innerText = `${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}`;
-                
-                if (--sisa < 0) {
+                let m = parseInt(secLeft / 60, 10);
+                let s = parseInt(secLeft % 60, 10);
+                display.innerText = `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+                if(--secLeft < 0) {
                     clearInterval(countdownTimer);
-                    alert("Waktu ujian telah habis!");
-                    prosesKalkulasiSkorKuis();
+                    hitungSkorAkhirEvaluasi();
                 }
             }, 1000);
         }
 
-        // --- PROSES KALKULASI & PENYIMPANAN SKOR ---
-        function prosesKalkulasiSkorKuis() {
+        function hitungSkorAkhirEvaluasi() {
             clearInterval(countdownTimer);
-            let jumlahBenar = 0;
-            databaseSoal.forEach((soal, idx) => {
-                if(jawabanSiswa[idx] === soal.c) jumlahBenar++;
-            });
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('page-result').classList.add('active');
 
-            let skorHitung = Math.round((jumlahBenar / databaseSoal.length) * 100);
-            
-            if (tipeKuisAktif === "pretest") {
-                nilaiPreTestSiswa = skorHitung;
-            } else {
-                nilaiPostTestSiswa = skorHitung;
-            }
+            let benar = 0;
+            databaseSoal.forEach((s, idx) => { if(jawabanSiswa[idx] === s.c) benar++; });
+            let skorHasil = Math.round((benar / databaseSoal.length) * 100);
 
-            // Simpan ke Browser Lokal (Backup)
-            let localData = JSON.parse(localStorage.getItem("edugizi_scores")) || [];
-            let indexData = localData.findIndex(item => item.nama.toLowerCase() === namaSiswa.toLowerCase() && item.kelas === kelasSiswa);
-            
-            let dataBaru = {
-                nama: namaSiswa,
-                kelas: kelasSiswa,
-                pretest: nilaiPreTestSiswa,
-                posttest: nilaiPostTestSiswa,
-                waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Makassar" })
-            };
+            if(tipeKuisAktif === 'pretest') nilaiPreTestSiswa = skorHasil;
+            else nilaiPostTestSiswa = skorHasil;
 
-            if (indexData !== -1) {
-                localData[indexData] = dataBaru;
-            } else {
-                localData.push(dataBaru);
-            }
-            localStorage.setItem("edugizi_scores", JSON.stringify(localData));
+            simpanKeDatabaseLokal(namaSiswa, kelasSiswa, nilaiPreTestSiswa, nilaiPostTestSiswa);
 
-            // PICU KIRIM OTOMATIS KE GOOGLE SHEETS
-            kirimKeGoogleSheets(namaSiswa, kelasSiswa, nilaiPreTestSiswa, nilaiPostTestSiswa);
-
-            tampilkanHalamanHasil();
-        }
-
-        function tampilkanHalamanHasil() {
-            document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-            document.getElementById("page-result").classList.add("active");
-            
             document.getElementById("res-student-name").innerText = namaSiswa;
             document.getElementById("res-student-kelas").innerText = kelasSiswa;
             document.getElementById("res-exam-type").innerText = tipeKuisAktif;
-            document.getElementById("res-score-pre").innerText = nilaiPreTestSiswa;
-            document.getElementById("res-score-post").innerText = nilaiPostTestSiswa;
+
+            document.getElementById("res-score-pre").innerText = `${nilaiPreTestSiswa}%`;
+            document.getElementById("res-score-post").innerText = `${nilaiPostTestSiswa}%`;
             
-            let progres = nilaiPostTestSiswa - nilaiPreTestSiswa;
-            document.getElementById("res-score-diff").innerText = progres >= 0 ? "+" + progres : progres;
-            document.getElementById("res-qualification-text").innerText = nilaiPostTestSiswa >= 80 ? "SANGAT BAIK" : (nilaiPostTestSiswa >= 60 ? "CUKUP" : "PERLU BELAJAR LAGI");
+            let selisih = nilaiPostTestSiswa - nilaiPreTestSiswa;
+            document.getElementById("res-score-diff").innerText = selisih >= 0 ? `+${selisih} Poin` : `${selisih} Poin`;
+
+            let predikat = "Perlu Belajar Lagi";
+            if(skorHasil >= 80) predikat = "Baik Sekali ⭐⭐⭐";
+            else if(skorHasil >= 60) predikat = "Cukup Baik 👍";
+            document.getElementById("res-qualification-text").innerText = predikat;
         }
 
-        // --- DASHBOARD ADMIN & REKAP ---
-        function aksesAdminDenganSandi() {
-            let inputSandi = prompt("Masukkan Kata Sandi Akses Guru / Admin:");
-            if (inputSandi === "admin123") {
-                document.getElementById("page-login").classList.remove("active");
-                document.getElementById("global-navbar").classList.add("hidden");
-                document.getElementById("main-content-area").classList.remove("hidden");
-                
-                document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-                document.getElementById("page-admin").classList.add("active");
-                muatTabelRekap();
-            } else if (inputSandi !== null) {
-                alert("Sandi salah!");
-            }
-        }
-
-        function muatTabelRekap() {
+        function simpanKeDatabaseLokal(nama, kelas, pre, post) {
+            if(!nama || nama === "Guru / Admin") return; 
             let localData = JSON.parse(localStorage.getItem("edugizi_scores")) || [];
-            let tbody = document.getElementById("tabel-rekap-body");
+            let index = localData.findIndex(item => item.nama.toLowerCase() === nama.toLowerCase() && item.kelas === kelas);
+
+            let waktuSekarang = new Date().toLocaleString("id-ID");
+
+            if(index !== -1) {
+                if(tipeKuisAktif === 'pretest') localData[index].pretest = pre;
+                if(tipeKuisAktif === 'posttest') localData[index].posttest = post;
+                localData[index].waktu = waktuSekarang;
+            } else {
+                localData.push({ nama: nama, kelas: kelas, pretest: pre, posttest: post, waktu: waktuSekarang });
+            }
+            localStorage.setItem("edugizi_scores", JSON.stringify(localData));
+        }
+
+        function muatTabelRekapAdmin() {
+            const tbody = document.getElementById("tabel-rekap-body");
             tbody.innerHTML = "";
-            
+            let localData = JSON.parse(localStorage.getItem("edugizi_scores")) || [];
+
             if(localData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada data nilai.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium">Belum ada data siswa yang mengerjakan kuis.</td></tr>`;
                 return;
             }
 
             localData.forEach((item, idx) => {
-                let progres = (item.posttest || 0) - (item.pretest || 0);
+                let deviasi = item.posttest - item.pretest;
+                let badgeProgres = deviasi >= 0 ? `<span class="text-emerald-600 font-bold">+${deviasi}</span>` : `<span class="text-red-500 font-bold">${deviasi}</span>`;
+                
                 tbody.innerHTML += `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50/50">
-                        <td class="p-4">${idx + 1}</td>
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="p-4 text-slate-400 font-bold">${idx + 1}</td>
                         <td class="p-4 font-bold text-slate-900">${item.nama}</td>
-                        <td class="p-4">${item.kelas}</td>
-                        <td class="p-4 text-center text-blue-600 font-bold">${item.pretest || 0}</td>
-                        <td class="p-4 text-center text-emerald-600 font-bold">${item.posttest || 0}</td>
-                        <td class="p-4 text-center font-bold ${progres >= 0 ? 'text-emerald-600':'text-red-500'}">${progres >= 0 ? '+' + progres : progres}</td>
-                        <td class="p-4 text-slate-400">${item.waktu || '-'}</td>
-                    </tr>`;
+                        <td class="p-4 text-slate-500">${item.kelas}</td>
+                        <td class="p-4 text-center text-blue-600 font-bold">${item.pretest}%</td>
+                        <td class="p-4 text-center text-emerald-600 font-bold">${item.posttest}%</td>
+                        <td class="p-4 text-center">${badgeProgres}</td>
+                        <td class="p-4 text-slate-400 text-[11px]">${item.waktu}</td>
+                    </tr>
+                `;
             });
+        }
+
+        function bersihkanSemuaData() {
+            if(confirm("Apakah Anda yakin ingin menghapus seluruh rekap nilai siswa di perangkat ini?")) {
+                localStorage.removeItem("edugizi_scores");
+                muatTabelRekapAdmin();
+            }
         }
 
         function eksporDataCSV() {
             let localData = JSON.parse(localStorage.getItem("edugizi_scores")) || [];
-            if(localData.length === 0) return alert("Tidak ada data untuk diekspor!");
-            
-            let csvContent = "data:text/csv;charset=utf-8,No,Nama Siswa,Kelas,Skor Pre-Test,Skor Post-Test,Waktu Ujian\n";
+            if(localData.length === 0) {
+                alert("Tidak ada data untuk diekspor!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,No,Nama Siswa,Kelas,Skor Pre-Test,Skor Post-Test,Kenaikan Poin,Waktu Ujian\n";
             localData.forEach((item, idx) => {
-                csvContent += `${idx+1},"${item.nama}","${item.kelas}",${item.pretest || 0},${item.posttest || 0},"${item.waktu || '-'}"\n`;
+                csvContent += `${idx+1},${item.nama},${item.kelas},${item.pretest}%,${item.posttest}%,${item.posttest - item.pretest},${item.waktu}\n`;
             });
-            
+
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Rekap_Nilai_Edugizi_${kelasSiswa || 'All'}.csv`);
+            link.setAttribute("download", "Rekap_Nilai_EDUGIZI_SMAN1_Parepare.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
-
-        function bersihkanSemuaData() {
-            if(confirm("Apakah Anda yakin ingin menghapus semua rekap data nilai di browser lokal ini?")) {
-                localStorage.removeItem("edugizi_scores");
-                muatTabelRekap();
-            }
-        }
-
-        // --- GERAKAN DROPDOWN PROFILE ---
-        function toggleProfileDropdown(e) { 
-            e.stopPropagation(); 
-            document.getElementById("profile-dropdown-menu").classList.toggle("hidden"); 
-        }
-        function closeProfileDropdown(e) { 
-            document.getElementById("profile-dropdown-menu").classList.add("hidden"); 
-        }
-        function handleLogoClick() { 
-            logoClickCount++; 
-            if(logoClickCount >= 5) { 
-                logoClickCount = 0; 
-                aksesAdminDenganSandi(); 
-            } else { 
-                navigateTo('home'); 
-            } 
-        }
-        function handleLogout() { location.reload(); }
     </script>
 </body>
 </html>
