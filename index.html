@@ -802,7 +802,7 @@
     const dataKlip = [new ClipboardItem({ 'text/html': blobKlip })];
 
     navigator.clipboard.write(dataKlip).then(() => {
-        alert("📋 Data REKAP NILAI berhasil disalin!\n\nSekarang buka Google Sheets Anda, lalu tekan tombol CTRL + V (Paste).");
+        alert("📋 Data REKAP NILAI berhasil disalin!\n");
     }).catch(err => {
         alert("Gagal menyalin data secara otomatis. Coba lagi.");
     });
